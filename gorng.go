@@ -1,3 +1,7 @@
+/*
+ * Check: https://blog.gopheracademy.com/advent-2017/a-tale-of-two-rands/
+ */
+
 package gorng
 
 import (
@@ -6,7 +10,7 @@ import (
 	mrand "math/rand"
 )
 
-var Rng = randInit()
+var srng = randInit()
 
 type cryptoSource struct{}
 
