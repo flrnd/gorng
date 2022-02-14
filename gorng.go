@@ -6,7 +6,7 @@ import (
 	mrand "math/rand"
 )
 
-var rng = randInit()
+var Rng = randInit()
 
 type cryptoSource struct{}
 
