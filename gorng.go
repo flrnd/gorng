@@ -10,7 +10,7 @@ import (
 	mrand "math/rand"
 )
 
-var srng = randInit()
+var Rng = randInit()
 
 type cryptoSource struct{}
 
