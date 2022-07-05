@@ -5,8 +5,9 @@
 package gorng
 
 import (
-	crand "crypto/rand"
+	"crypto/rand"
 	"encoding/binary"
+	"math/big"
 	mrand "math/rand"
 )
 
@@ -16,8 +17,9 @@ type cryptoSource struct{}
 
 func (s *cryptoSource) Seed(seed int64) {}
 
+// Uint64 returns a securely generated int64 value.
 func (s *cryptoSource) Uint64() (value uint64) {
-	binary.Read(crand.Reader, binary.BigEndian, &value)
+	binary.Read(rand.Reader, binary.BigEndian, &value)
 	return value
 }
 
@@ -30,4 +32,25 @@ func randInit() (myRand *mrand.Rand) {
 	myRand = mrand.New(src)
 
 	return myRand
+}
+
+// GenerateRandomBytes returns securely generated random bytes.
+// It will return an error if fails
+func GenerateRandomBytes(n int) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+// GenerateRandomInt returns securely generated random integer.
+// It will return an error if fails
+func GenerateRandomInt(n int64) (int, error) {
+	num, err := rand.Int(rand.Reader, big.NewInt(n))
+	if err != nil {
+		return -1, err
+	}
+	return int(num.Int64()), nil
 }
