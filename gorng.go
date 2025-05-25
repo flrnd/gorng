@@ -1,56 +1,72 @@
-/*
- * Check: https://blog.gopheracademy.com/advent-2017/a-tale-of-two-rands/
- */
+// math/rand/v2: revised API for math/rand
+// https://github.com/golang/go/issues/61716
 
 package gorng
 
 import (
-	"crypto/rand"
+	crand "crypto/rand"
 	"encoding/binary"
-	"math/big"
-	mrand "math/rand"
+	randv2 "math/rand/v2"
 )
 
-var Rng = randInit()
+// --- PRNG Interface ---
+type PRNG = *randv2.Rand
 
-type cryptoSource struct{}
-
-func (s *cryptoSource) Seed(seed int64) {}
-
-// Uint64 returns a securely generated int64 value.
-func (s *cryptoSource) Uint64() (value uint64) {
-	binary.Read(rand.Reader, binary.BigEndian, &value)
-	return value
+// --- ChaCha8 PRNG ---
+func NewChaCha8PRNG(seed [32]byte) PRNG {
+	return randv2.New(randv2.NewChaCha8(seed))
 }
 
-func (s *cryptoSource) Int63() int64 {
-	return int64(s.Uint64() & ^uint64(1<<63))
-}
-
-func randInit() (myRand *mrand.Rand) {
-	var src mrand.Source64 = &cryptoSource{}
-	myRand = mrand.New(src)
-
-	return myRand
-}
-
-// GenerateRandomBytes returns securely generated random bytes.
-// It will return an error if fails
-func GenerateRandomBytes(n int) ([]byte, error) {
-	b := make([]byte, n)
-	_, err := rand.Read(b)
+func NewChaCha8SeededPRNG() (PRNG, error) {
+	b, err := GenerateRandomBytes(32)
 	if err != nil {
 		return nil, err
 	}
-	return b, nil
+
+	var seed [32]byte
+
+	copy(seed[:], b)
+
+	return NewChaCha8PRNG(seed), nil
 }
 
-// GenerateRandomInt returns securely generated random integer.
-// It will return an error if fails
-func GenerateRandomInt(n int64) (int, error) {
-	num, err := rand.Int(rand.Reader, big.NewInt(n))
+// --- PCG PRNG ---
+func NewPCGPRNG(seed, stream uint64) PRNG {
+	return randv2.New(randv2.NewPCG(seed, stream))
+}
+
+func NewPCGRandomPRNG() (PRNG, error) {
+	var seeds [2]uint64
+
+	err := binary.Read(crand.Reader, binary.BigEndian, &seeds)
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
-	return int(num.Int64()), nil
+
+	return NewPCGPRNG(seeds[0], seeds[1]), nil
+}
+
+// --- Crypto PRNG ---
+type cryptoPRNG struct{}
+
+func (c cryptoPRNG) IntN(n int) int {
+	val, err := GenerateRandomInt(int64(n))
+
+	if err != nil {
+		panic("crypto PRNG failed")
+	}
+
+	return val
+}
+
+func (c cryptoPRNG) Uint64() uint64 {
+	var val uint64
+
+	_ = binary.Read(crand.Reader, binary.BigEndian, &val)
+
+	return val
+}
+
+func NewCryptoPRNG() cryptoPRNG {
+	return cryptoPRNG{}
 }

@@ -55,3 +55,4 @@ func main() {
     pcg := gorng.NewPCGPRNG(12345, 67890)
     fmt.Println("PCG:", pcg.IntN(100))
 }
+```
