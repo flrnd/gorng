@@ -1,32 +1,58 @@
-# gorng — Go Random Number Generator Module
+# gorng
 
-gorng is a lightweight Go module for generating both cryptographically secure and deterministic pseudo-random numbers, with pluggable backends using Go 1.22’s new math/rand/v2 standard library package.
+A minimal, extensible Go module for generating both cryptographically secure and deterministic pseudo-random numbers. Starting from v2, it uses Go 1.22’s modern `math/rand/v2` APIs with swappable PRNG backends like ChaCha8 and PCG.
 
-It supports:
-  - 🔐 Secure random bytes and integers (crypto/rand)
-  - 🎲 Deterministic PRNGs:
-    - ChaCha8 — high-quality stream cipher for reproducible randomness
-    - PCG — small, fast, statistically sound
+---
 
-## Features
+## ✨ Features
 
-- Simple interface: PRNG (compatible with *randv2.Rand)
-- Secure helpers: GenerateRandomBytes, GenerateRandomInt
-- Supports:
-  - NewChaCha8PRNG(seed [32]byte)
-  - NewChaCha8SeededPRNG() — secure seeded
-  - NewPCGPRNG(seed, stream uint64)
-  - NewPCGRandomPRNG() — securely seeded
-  - NewCryptoPRNG() — cryptographically secure
+- 🔐 **Cryptographically secure randomness** (`crypto/rand`)
+- 🎲 **Deterministic PRNGs**:
+  - **ChaCha8** — reproducible randomness with strong distribution
+  - **PCG** — compact, fast, and statistically sound
+- 🧩 Simple `PRNG` interface compatible with `*randv2.Rand`
+- Designed for password generation, simulations, procedural content, and CLI utilities
 
-### ⚠️ Breaking Changes in v0.0.3
+---
 
-If you're upgrading from v0.0.2, please note:
-- ❌ Removed the previous math/rand.Source64-based crypto implementation
-- ✅ PRNG is now an alias for *randv2.Rand
-- 🆕 ChaCha8 and PCG must now be wrapped with randv2.New(...) as required by Go 1.22’s rand/v2 model
-- ✅ cryptoPRNG remains available and implements the same interface manually
+## 📦 Versioning
 
-### 📦 Requirements
+This project uses Go modules with versioned import paths:
 
-Go 1.22+
+| Version | Import Path                        | Notes                                      |
+|---------|------------------------------------|--------------------------------------------|
+| v1.x    | `github.com/flrnd/gorng`    | Legacy version using `crypto/rand` and custom `rand.Source64` |
+| v2.x    | `github.com/flrnd/gorng/v2` | ✅ Current version, based on `math/rand/v2` |
+
+---
+
+## ⚠️ Breaking Changes in v2
+
+- `PRNG` is now an alias for `*randv2.Rand`, offering `IntN()` and `Uint64()` out of the box.
+- ChaCha8 and PCG PRNGs are constructed via `randv2.New(...)`.
+- Removed `math/rand.Source64`-based crypto RNG from v1.
+- Requires **Go 1.22+**.
+
+---
+
+## ✅ Example Usage (v2)
+
+```go
+import "github.com/flrnd/gorng/v2"
+
+func main() {
+    // 🔐 Crypto PRNG
+    crypto := gorng.NewCryptoPRNG()
+    fmt.Println("Secure Int:", crypto.IntN(100))
+
+    // 🌀 ChaCha8 (deterministic)
+    var seed [32]byte
+    copy(seed[:], "your 32-byte seed value here")
+    chacha := gorng.NewChaCha8PRNG(seed)
+    fmt.Println("ChaCha8:", chacha.IntN(100))
+
+    // 🎲 PCG
+    pcg := gorng.NewPCGPRNG(12345, 67890)
+    fmt.Println("PCG:", pcg.IntN(100))
+}
+```
